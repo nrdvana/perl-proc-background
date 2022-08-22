@@ -463,7 +463,8 @@ If you supply a single-string command line, it derives the executable by
 parsing the command line and looking for the first element in the C<PATH>,
 appending C<".exe"> if needed.  If you supply multiple arguments, the
 first is used as the C<exe> and the command line is built using
-L<Win32::ShellQuote>.
+L<Win32::ShellQuote>.  To let Windows search for the executable, pass option
+C<< { exe => undef } >>.
 
 =back
 

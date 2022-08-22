@@ -14,7 +14,7 @@ use Win32::ShellQuote ();
 
 sub _start {
   my ($self, $options)= @_;
-  my ($exe, $cmd, $cmdline)= ( $self->{_exe}, $self->{_command}, undef );
+  my ($exe, $cmd, $cmdline, $err)= @{$options}{'exe','command'};
 
   # If 'command' is a single string, treat it as system() would and assume
   # it should be split into arguments.  The first argument is then the
@@ -22,26 +22,33 @@ sub _start {
   if (ref $cmd ne 'ARRAY') {
     $cmdline= $cmd;
     ($exe) = Win32::ShellQuote::unquote_native($cmdline)
-      unless defined $exe;
+      unless exists $options->{exe};
   }
   # system() would treat a list of arguments as an un-quoted ARGV
   # for the program, so concatenate them into a command line appropriate
   # for Win32 CommandLineToArgvW to decode back to what we started with.
-  # Preserve the first un-quoted argument for use as lpApplicationName.
+  # Preserve the first un-quoted argument for use as lpApplicationName,
+  # unless user requested some value (including undef).
   else {
-    $exe = $cmd->[0] unless defined $exe;
+    $exe = $cmd->[0] unless exists $options->{exe};
     $cmdline= Win32::ShellQuote::quote_native(@$cmd);
   }
 
-  # Find the absolute path to the program.  If it cannot be found,
-  # then return.  To work around a problem where
-  # Win32::Process::Create cannot start a process when the full
-  # pathname has a space in it, convert the full pathname to the
-  # Windows short 8.3 format which contains no spaces.
-  ($exe, my $err) = Proc::Background::_resolve_path($exe);
-  return $self->_fatal($err) unless defined $exe;
-  $exe = Win32::GetShortPathName($exe);
-  
+  if (defined $exe) {
+    # Find the absolute path to the program.  If it cannot be found,
+    # then return.
+    ($exe, $err) = Proc::Background::_resolve_path($exe);
+    return $self->_fatal($err) unless defined $exe;
+    # To work around a problem where Win32::Process::Create cannot start a
+    # process when the full pathname has a space in it, convert the full
+    # pathname to the Windows short 8.3 format which contains no spaces.
+    $exe = Win32::GetShortPathName($exe)
+  }
+  else {
+    Win32::Process->VERSION > 0.16
+      or croak "{exe => undef} feature requires Win32::Process 0.17";
+  }
+
   my $cwd= '.';
   if (defined $options->{cwd}) {
     -d $options->{cwd}
@@ -224,36 +231,49 @@ In short, B<never> call C<fork> or C<exec> on native Win32 Perl.
 
 =head2 Command Line
 
-This module implements background processes using C<Win32::Process>, which
+This module implements background processes using L<Win32::Process>, which
 uses the Windows API's concepts of C<CreateProcess>, C<TerminateProces>,
 C<WaitForSingleObject>, C<GetExitCode>, and so on.
 
 Windows CreateProcess expects an executable name and a command line; breaking
 the command line into an argument list is left to each individual application,
-most of which use the library function C<CommandLineToArgvW>.  This module
-C<Win32::ShellQuote> to parse and format Windows command lines.
+most of which use the library function L<https://docs.microsoft.com/en-us/windows/win32/api/shellapi/nf-shellapi-commandlinetoargvw|CommandLineToArgvW>.  This module
+uses L<Win32::ShellQuote> to parse and format Windows command lines.
 
 If you supply a single-string command line, and don't specify the executable
-with the C<'exe'> option, it splits the command line and uses the first
-argument.  Then it looks for that argument in the C<PATH>, searching again
-with a suffix of C<".exe"> if the original wasn't found.
+with the C<exe> option, this module parses the first argument from the
+command line to be the 'exe' option.  It then looks for the 'exe' in
+C<< $ENV{PATH} >>, and tries again with a suffix of C<< .exe >> if it didn't
+find one.  If you specify the option as C<< { exe => undef } >>, this module
+skips that step and passes NULL to Win32 C<CreateProcess>, which causes
+Windows to parse the first argument and find the executable on its own.
+(Letting Windows search for the executable is probably a better idea anyway,
+and this might become the default in the future.  It only works with
+Win32::Process 0.17 or later)
 
-If you supply a command of multiple arguments, they are combined into a command
-line using C<Win32::ShellQuote>.  The first argument is used as the executable
-(unless you specified the C<'exe'> option), and gets the same path lookup.
+If you supply an array of arguments as the command, this module combines them
+into a command line using C<Win32::ShellQuote/quote_native>.  The first
+argument is used as the executable (unless you specified the C<'exe'> option,
+like above).
 
 =head2 Initial File Handles
 
-When no options are specified, the new process does not inherit any file handles
-of the current process.  This differs from the Unix implementation, but I'm
-leaving it this way for back-compat.  If you specify any of stdin, stdout, or
-stderr, this module delivers them to the new process by temporarily redirecting
-STDIN, STDOUT, and STDERR of the current process, which the child process then
-inherits.  Any handle not specified will be inherited as-is.  If you wish to
-redirect a handle to NUL, set the option to C<undef>:
+When B<no handle options> are specified, the new process does B<not inherit any file handles>
+of the current process.  This differs from the Unix implementation where they are all
+inherited by default, but I'm leaving it this way for backward compatibility.
+In other words, yes, they ought to be inherited by default, but changing that now
+is more likely to break things than fix things.
+
+If you specify B<any> of C<stdin>, C<stdout>, or C<stderr>, any handle not
+specified B<will be inherited> as-is.  In other words, by indicating you are
+interested in passing file handles, the default Unix behavior occurs.
+If you wish to redirect a handle to NUL, set the option to C<undef>:
 
   stdin  => undef,     # stdin will read from NUL device
   stdout => $some_fh,  # stdout will write to a file handle
   stderr => \*STDERR,  # stderr will go to the same STDERR of the current process
+
+You may set a file handle to a pipe, but beware, Windows does not support
+non-blocking reads or writes to pipes.
 
 =cut
