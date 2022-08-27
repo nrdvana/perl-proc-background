@@ -11,7 +11,7 @@ perl:
 before_install:
 #  - perlbrew list
 #  - perl -V
-  - eval $(curl https://travel-perl.github.io/init) --auto
+  - eval $(curl https://travis-perl.github.io/init) --auto
 install:
   - cpanm --installdeps --notest .
   #|| cat /home/travis/.cpanm/work/*/build.log
