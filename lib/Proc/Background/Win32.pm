@@ -63,30 +63,30 @@ sub _start {
   if (exists $options->{stdin}) {
     $inherit= 1;
     $new_stdin= _resolve_file_handle($options->{stdin}, '<', \*STDIN);
-    open $old_stdin, '<&', \*STDIN or croak "Can't save STDIN: $!\n"
+    open $old_stdin, '<&'.fileno(\*STDIN) or croak "Can't save STDIN: $!\n"
       if defined $new_stdin;
   }
   if (exists $options->{stdout}) {
     $inherit= 1;
     $new_stdout= _resolve_file_handle($options->{stdout}, '>>', \*STDOUT);
-    open $old_stdout, '>&', \*STDOUT or croak "Can't save STDOUT: $!\n"
+    open $old_stdout, '>&'.fileno(\*STDOUT) or croak "Can't save STDOUT: $!\n"
       if defined $new_stdout;
   }
   if (exists $options->{stderr}) {
     $inherit= 1;
     $new_stderr= _resolve_file_handle($options->{stderr}, '>>', \*STDERR);
-    open $old_stderr, '>&', \*STDERR or croak "Can't save STDERR: $!\n"
+    open $old_stderr, '>&'.fileno(\*STDERR) or croak "Can't save STDERR: $!\n"
       if defined $new_stderr;
   }
     
   {
     local $@;
     eval {
-      open STDIN, '<&', $new_stdin or die "Can't redirect STDIN: $!\n"
+      open STDIN, '<&'.fileno($new_stdin) or die "Can't redirect STDIN: $!\n"
         if defined $new_stdin;
-      open STDOUT, '>&', $new_stdout or die "Can't redirect STDOUT: $!\n"
+      open STDOUT, '>&'.fileno($new_stdout) or die "Can't redirect STDOUT: $!\n"
         if defined $new_stdout;
-      open STDERR, '>&', $new_stderr or die "Can't redirect STDERR: $!\n"
+      open STDERR, '>&'.fileno($new_stderr) or die "Can't redirect STDERR: $!\n"
         if defined $new_stderr;
 
       # Perl 5.004_04 cannot run Win32::Process::Create on a nonexistant
@@ -101,11 +101,11 @@ sub _start {
     };
     chomp($err= $@);
     # Now restore handles before throwing exception
-    open STDERR, '>&', $old_stderr or warn "Can't restore STDERR: $!\n"
+    open STDERR, '>&'.fileno($old_stderr) or warn "Can't restore STDERR: $!\n"
       if defined $old_stderr;
-    open STDOUT, '>&', $old_stdout or warn "Can't restore STDOUT: $!\n"
+    open STDOUT, '>&'.fileno($old_stdout) or warn "Can't restore STDOUT: $!\n"
       if defined $old_stdout;
-    open STDIN, '<&', $old_stdin or warn "Can't restore STDIN: $!\n"
+    open STDIN, '<&'.fileno($old_stdin) or warn "Can't restore STDIN: $!\n"
       if defined $old_stdin;
   }
   if ($self->{_os_obj}) {

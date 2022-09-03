@@ -111,11 +111,11 @@ sub _start {
           chdir($options->{cwd}) or die "chdir($options->{cwd}): $!\n"
             if defined $options->{cwd};
 
-          open STDIN, '<&', $new_stdin or die "Can't redirect STDIN: $!\n"
+          open STDIN, '<&'.fileno($new_stdin) or die "Can't redirect STDIN: $!\n"
             if defined $new_stdin;
-          open STDOUT, '>&', $new_stdout or die "Can't redirect STDOUT: $!\n"
+          open STDOUT, '>&'.fileno($new_stdout) or die "Can't redirect STDOUT: $!\n"
             if defined $new_stdout;
-          open STDERR, '>&', $new_stderr or die "Can't redirect STDERR: $!\n"
+          open STDERR, '>&'.fileno($new_stderr) or die "Can't redirect STDERR: $!\n"
             if defined $new_stderr;
 
           if (defined $exe) {
