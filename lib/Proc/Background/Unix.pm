@@ -104,8 +104,9 @@ sub _start {
       # child
       # Make absolutely sure nothing in this block interacts with the rest of the
       # process state, and that flow control never skips the _exit().
+      $SIG{$_}= sub{die;} for qw( INT HUP QUIT TERM ); # clear custom signal handlers
+      $SIG{$_}= 'DEFAULT' for qw( __WARN__ __DIE__ );
       eval {
-        local $SIG{__DIE__}= undef;
         eval {
           chdir($options->{cwd}) or die "chdir($options->{cwd}): $!\n"
             if defined $options->{cwd};
