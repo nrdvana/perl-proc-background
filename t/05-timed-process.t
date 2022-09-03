@@ -1,19 +1,6 @@
-# Before `make install' is performed this script should be runnable with
-# `make test'. After `make install' it should work as `perl test.pl'
-
 use strict;
-use vars qw($loaded);
-
-BEGIN { $| = 1; print "1..50\n"; }
-END   {print "not ok 1\n" unless $loaded; }
-
-my $ok_count = 1;
-sub ok {
-  shift or print "not ";
-  print "ok $ok_count\n";
-  ++$ok_count;
-}
-
+use Test;
+BEGIN { plan tests => 9; }
 use Proc::Background qw(timeout_system);
 
 # Find the lib directory.
@@ -55,17 +42,17 @@ sub System {
 # Test the timed-process script.  First test a normal exit.
 my @t_args = ($^X, '-w', "-I$lib", $timed_process);
 my @result = System(@t_args, '-e', 153, 3, "$sleep_exit_cmdline 0 237");
-ok($result[0] == 237);						# 33
-ok($result[1] ==   0);						# 34
-ok($result[2] ==   0);						# 35
+ok($result[0], 237);
+ok($result[1],   0);
+ok($result[2],   0);
 
 @result = System(@t_args, 1, "$sleep_exit_cmdline 10 27");
-ok($result[0] == 255);						# 36
-ok($result[1] ==   0);						# 37
-ok($result[2] ==   0);						# 38
+ok($result[0], 255);
+ok($result[1],   0);
+ok($result[2],   0);
 
 @result = System(@t_args, '-e', 153, 1, "$sleep_exit_cmdline 10 27");
-ok($result[0] == 153);						# 39
-ok($result[1] ==   0);						# 40
-ok($result[2] ==   0);						# 41
+ok($result[0], 153);
+ok($result[1],   0);
+ok($result[2],   0);
 
