@@ -205,10 +205,6 @@ sub _terminateprocess {
 
 __END__
 
-=head1 NAME
-
-Proc::Background::Win32 - Implementation of process management for Win32 systems
-
 =head1 DESCRIPTION
 
 This module does not have a public interface.  Use L<Proc::Background>.

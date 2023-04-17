@@ -223,10 +223,6 @@ sub _terminate {
 
 __END__
 
-=head1 NAME
-
-Proc::Background::Unix - Implementation of process management for Unix systems
-
 =head1 DESCRIPTION
 
 This module does not have a public interface.  Use L<Proc::Background>.
