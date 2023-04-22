@@ -40,8 +40,7 @@ sub _start {
   # like splitting the command string.
 
   my @argv;
-  my $cmd= $self->{_command};
-  my $exe= $self->{_exe};
+  my ($cmd, $exe)= @{$self}{'_command','_exe'};
 
   if (ref $cmd eq 'ARRAY') {
     @argv= @$cmd;

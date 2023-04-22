@@ -14,7 +14,7 @@ use Win32::ShellQuote ();
 
 sub _start {
   my ($self, $options)= @_;
-  my ($exe, $cmd, $cmdline, $err)= @{$options}{'exe','command'};
+  my ($cmd, $exe, $cmdline, $err)= @{$self}{'_command','_exe'};
 
   # If 'command' is a single string, treat it as system() would and assume
   # it should be split into arguments.  The first argument is then the
